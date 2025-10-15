@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎰 Browser Slot Machine</title>
+<style>
+  body { background: #1a1a1a; color: white; text-align: center; font-family: Arial, sans-serif; }
+  .slot-grid { display: grid; grid-template-columns: repeat(3, 100px); grid-gap: 10px; justify-content: center; margin: 20px auto; }
+  .slot-cell { background: #333; font-size: 50px; height: 100px; width: 100px; display: flex; justify-content: center; align-items: center; border-radius: 10px; box-shadow: 0 0 10px #000; transition: background 0.1s; }
+  button { font-size: 24px; padding: 10px 30px; margin: 20px; background: gold; border: none; border-radius: 8px; cursor: pointer; }
+  button:disabled { background: #aaa; cursor: not-allowed; }
+  #message { font-size: 20px; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<h1>🎰 Casino Slot Machine</h1>
+<div id="credits">Credit: 10000 MMK</div>
+<div id="jackpot">Jackpot: 50000 MMK</div>
+
+<div class="slot-grid" id="slotGrid">
+  <div class="slot-cell">🍒</div>
+  <div class="slot-cell">🍋</div>
+  <div class="slot-cell">💎</div>
+  <div class="slot-cell">🔔</div>
+  <div class="slot-cell">🍀</div>
+  <div class="slot-cell">⭐</div>
+  <div class="slot-cell">🍒</div>
+  <div class="slot-cell">🍋</div>
+  <div class="slot-cell">💎</div>
+</div>
+
+<button id="spinBtn">SPIN 🎰</button>
+<div id="message">Click SPIN to play!</div>
+
+<script>
+const symbols = ["🍒","🍋","💎","🔔","🍀","⭐"];
+let credit = 10000;
+let jackpot = 50000;
+const spinCost = 200;
+
+const slotGrid = document.getElementById("slotGrid");
+const cells = slotGrid.children;
+const spinBtn = document.getElementById("spinBtn");
+const message = document.getElementById("message");
+const creditDisplay = document.getElementById("credits");
+const jackpotDisplay = document.getElementById("jackpot");
+
+function updateDisplay() {
+    creditDisplay.textContent = `Credit: ${credit} MMK`;
+    jackpotDisplay.textContent = `Jackpot: ${jackpot} MMK`;
+}
+
+function flashWin() {
+    let flashCount = 0;
+    const interval = setInterval(()=>{
+        for(let cell of cells){
+            cell.style.background = flashCount % 2 === 0 ? "#FFD700" : "#333";
+        }
+        flashCount++;
+        if(flashCount>6) clearInterval(interval);
+    }, 100);
+}
+
+function spin() {
+    if(credit < spinCost){
+        message.textContent = "💸 Not enough credit!";
+        return;
+    }
+    credit -= spinCost;
+    updateDisplay();
+    spinBtn.disabled = true;
+    message.textContent = "🎰 Spinning...";
+
+    const winningRows = [];
+    for(let i=0;i<3;i++){
+        if(Math.random()<0.2) winningRows.push(i); // 20% chance per row
+    }
+
+    const finalGrid = Array(3).fill().map(()=>Array(3).fill().map(()=>symbols[Math.floor(Math.random()*symbols.length)]));
+
+    // Force winning rows
+    winningRows.forEach(row=>{
+        const sym = symbols[Math.floor(Math.random()*symbols.length)];
+        finalGrid[row] = [sym,sym,sym];
+    });
+
+    // Animate reels
+    let animationSteps = 20;
+    const animateReels = setInterval(()=>{
+        for(let r=0;r<3;r++){
+            for(let c=0;c<3;c++){
+                cells[r*3+c].textContent = symbols[Math.floor(Math.random()*symbols.length)];
+            }
+        }
+        animationSteps--;
+        if(animationSteps<=0){
+            clearInterval(animateReels);
+            // Set final grid
+            for(let r=0;r<3;r++){
+                for(let c=0;c<3;c++){
+                    cells[r*3+c].textContent = finalGrid[r][c];
+                }
+            }
+
+            // Calculate winnings
+            const rowsMatched = winningRows.length;
+            let winnings = 0;
+            if(rowsMatched===0){
+                message.textContent = "💨 You Lost! Better luck next time!";
+            } else {
+                let multiplier = rowsMatched===1 ? 2 : rowsMatched===2 ? 5 : 20;
+                winnings = spinCost * multiplier;
+                credit += winnings;
+                if(rowsMatched===3) jackpot = Math.max(0,jackpot-winnings);
+                updateDisplay();
+                message.textContent = `🎉 WIN! ${winnings} MMK (${rowsMatched} row(s))`;
+                flashWin();
+            }
+            spinBtn.disabled = false;
+        }
+    }, 80);
+}
+
+spinBtn.addEventListener("click", spin);
+
+updateDisplay();
+</script>
+
+</body>
+</html>
